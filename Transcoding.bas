@@ -14,7 +14,7 @@ Public Enum TextFormat
 End Enum
 
 '·µ»ØÄÚ²¿×Ö·û´®
-Public Function CInternal(ByVal sourceString As String, Optional ByVal sourceType As TextFormat) As String
+Public Function CInternal(ByVal sourceString As String, Optional ByVal sourceType As TextFormat = OX_PLAIN) As String
     Select Case sourceType
     Case OX_PLAIN
         sourceString = Replace$(sourceString, """", """""")

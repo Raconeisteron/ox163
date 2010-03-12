@@ -1,31 +1,5 @@
 Attribute VB_Name = "Parsing"
-Option Explicit
-
-Public Type ScriptInfo
-    filename As String
-    language As String
-    encoding As String
-    handleType As String
-    criteria As String
-End Type
-
-Public Type downloadInfo
-    isFinal As Boolean
-    mode As DownloadMode
-    excludeChar() As String
-    regularURL As String
-    refererURL As String
-    method As String
-End Type
-
-Public Type AlbumInfo
-    hasPassword As Boolean
-    picCount As Integer
-    URL As String
-    dirName As String
-    description As String
-End Type
-Public Function ParseInclude(ByVal sourceString As String, escFormat As EscapeFormat) As ScriptInfo
+Public Function ParseInclude(ByVal sourceString As String, escFormat As EscapeFormat) As ScriptData
     Dim expression As New RegExp, results As MatchCollection, result As Match
     expression.Global = True
     expression.IgnoreCase = True
@@ -37,15 +11,15 @@ Public Function ParseInclude(ByVal sourceString As String, escFormat As EscapeFo
     Debug.Assert results.count > 0
     
     Set result = results.Item(0)
-    ParseInclude.filename = result.SubMatches(0)
-    ParseInclude.language = LCase$(result.SubMatches(1))
+    ParseInclude.FileName = result.SubMatches(0)
+    ParseInclude.Language = LCase$(result.SubMatches(1))
     ParseInclude.encoding = result.SubMatches(2)
     ParseInclude.handleType = LCase$(result.SubMatches(3))
     ParseInclude.criteria = DeEscape(result.SubMatches(4), escFormat)
 End Function
 
-Public Function ParseAlbum(ByVal sourceString As String, escFormat As EscapeFormat) As AlbumInfo()
-    Dim expression As New RegExp, results As MatchCollection, result As Match, infos() As AlbumInfo
+Public Function ParseAlbum(ByVal sourceString As String, escFormat As EscapeFormat) As AlbumData()
+    Dim expression As New RegExp, results As MatchCollection, result As Match, infos() As AlbumData
     expression.Global = True
     expression.IgnoreCase = True
     expression.MultiLine = True
@@ -53,20 +27,22 @@ Public Function ParseAlbum(ByVal sourceString As String, escFormat As EscapeForm
     expression.Pattern = "(-?\d+)" & OX_SEPARATOR & "(\d+)?" & OX_SEPARATOR & "(" & OX_ESCAPED & ")" & OX_SEPARATOR & _
     "(" & OX_ESCAPED & ")" & OX_SEPARATOR & "(" & OX_ESCAPED & ")$"
     Set results = expression.Execute(sourceString)
-    Dim index As Integer
-    index = IIf(results.count > 0, 0, -1)
-    ReDim infos(index To results.count - 1) As AlbumInfo
+    
+    Dim Index As Integer
+    Index = IIf(results.count > 0, 0, -1)
+    ReDim infos(Index To results.count - 1) As AlbumData
     For Each result In results
-        infos(index).hasPassword = (CInt(result.SubMatches(0)) <> 0)
-        infos(index).picCount = CInt(result.SubMatches(1))
-        infos(index).URL = DeEscape(result.SubMatches(2), escFormat)
-        infos(index).dirName = DeEscape(result.SubMatches(3), escFormat)
-        infos(index).description = DeEscape(result.SubMatches(4), escFormat)
-        index = index + 1
+     Debug.Print result.Value
+        infos(Index).hasPassword = (CInt(result.SubMatches(0)) <> 0)
+        infos(Index).picCount = CInt(result.SubMatches(1))
+        infos(Index).URL = DeEscape(result.SubMatches(2), escFormat)
+        infos(Index).dirName = DeEscape(result.SubMatches(3), escFormat)
+        infos(Index).Description = DeEscape(result.SubMatches(4), escFormat)
+        Index = Index + 1
     Next
     ParseAlbum = infos
 End Function
-Public Function ParseDownloadURL(ByVal sourceString As String, escFormat As EscapeFormat) As downloadInfo
+Public Function ParseDownloadURL(ByVal sourceString As String, escFormat As EscapeFormat) As URLData
     Dim expression As New RegExp, results As MatchCollection, result As Match
     expression.Global = True
     expression.IgnoreCase = True
@@ -81,7 +57,7 @@ Public Function ParseDownloadURL(ByVal sourceString As String, escFormat As Esca
     ParseDownloadURL.isFinal = IIf(result.SubMatches(0) = "", False, CInt(result.SubMatches(0)) = 0)
     If ParseDownloadURL.isFinal Then Exit Function
     ParseDownloadURL.mode = IIf(LCase$(result.SubMatches(1)) = "inet", OX_INET, OX_WEB)
-    ParseDownloadURL.excludeChar = Split(result.SubMatches(2), ",")
+    'ParseDownloadURL.excludeChar = Split(result.SubMatches(2), ",")
     ParseDownloadURL.regularURL = Trim$(DeEscape(result.SubMatches(3), escFormat))
     ParseDownloadURL.refererURL = DeEscape(result.SubMatches(4), escFormat)
     ParseDownloadURL.method = result.SubMatches(5)
